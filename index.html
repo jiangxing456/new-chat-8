@@ -1059,6 +1059,7 @@
 
     stage.addEventListener('pointerdown', (event) => {
       if (state.gameOver) return;
+      if (event.target.closest('.hud')) return;
       state.pointerActive = true;
       handlePointerMove(event.clientX);
       stage.setPointerCapture?.(event.pointerId);
