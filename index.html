@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon Drift</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #060816;
+      --bg-1: #0b1022;
+      --card: rgba(11, 16, 34, 0.72);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #eaf0ff;
+      --muted: #96a0bf;
+      --accent: #7cf7d4;
+      --accent-2: #7db8ff;
+      --danger: #ff6b7a;
+      --gold: #ffd36b;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(125, 184, 255, 0.18), transparent 32%),
+        radial-gradient(circle at 85% 10%, rgba(124, 247, 212, 0.15), transparent 28%),
+        linear-gradient(160deg, var(--bg-0), var(--bg-1));
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 38vw;
+      height: 38vw;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    body::before {
+      left: -10vw;
+      top: 18vh;
+      background: rgba(125, 184, 255, 0.65);
+    }
+
+    body::after {
+      right: -12vw;
+      bottom: -12vh;
+      background: rgba(124, 247, 212, 0.48);
+      animation-delay: -6s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -18px, 0) scale(1.04); }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      border-radius: 22px;
+    }
+
+    .brand {
+      padding: 24px;
+      min-height: 132px;
+      display: grid;
+      gap: 12px;
+      align-content: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(124, 247, 212, 0.12);
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .sub {
+      max-width: 58ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 18px;
+      display: grid;
+      gap: 8px;
+      align-content: center;
+      min-height: 132px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .value small {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .stage-shell {
+      position: relative;
+      padding: 14px;
+    }
+
+    .stage {
+      position: relative;
+      height: min(74vh, 760px);
+      min-height: 440px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        radial-gradient(circle at 50% 14%, rgba(125, 184, 255, 0.12), transparent 22%),
+        radial-gradient(circle at 20% 20%, rgba(124, 247, 212, 0.08), transparent 18%),
+        linear-gradient(180deg, rgba(8, 11, 22, 0.88), rgba(5, 8, 17, 0.98));
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 16px 16px auto 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      pointer-events: auto;
+      background: rgba(10, 14, 28, 0.72);
+      border: 1px solid rgba(255,255,255,0.11);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chip b {
+      color: white;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      color: #061019;
+      background: linear-gradient(135deg, var(--accent), #d4fff4);
+      box-shadow: 0 16px 32px rgba(124, 247, 212, 0.18);
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: none;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at center, rgba(4, 8, 18, 0.4), rgba(4, 8, 18, 0.82));
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .card {
+      width: min(520px, calc(100% - 32px));
+      padding: 28px;
+      border-radius: 24px;
+      background: rgba(8, 12, 24, 0.86);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+      text-align: center;
+      backdrop-filter: blur(18px);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      letter-spacing: -0.04em;
+    }
+
+    .card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .tips {
+      display: grid;
+      gap: 10px;
+      margin: 20px 0 22px;
+      color: #dfe7ff;
+      text-align: left;
+    }
+
+    .tip {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 5px;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(124, 247, 212, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 12px;
+      color: rgba(234, 240, 255, 0.58);
+    }
+
+    @media (max-width: 920px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .stage {
+        min-height: 520px;
+        height: 68vh;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100vw - 20px, 1180px);
+        padding-top: 12px;
+      }
+
+      .brand, .stat {
+        min-height: auto;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .hud {
+        inset: 12px 12px auto 12px;
+        flex-direction: column;
+      }
+
+      .stage {
+        min-height: 520px;
+        height: 64vh;
+      }
+
+      .actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="panel brand">
+        <div class="eyebrow">browser game</div>
+        <h1>Neon Drift</h1>
+        <p class="sub">左右移动你的光球，躲开坠落的陨石，顺手收集金色能量。坚持得越久，分数越高，节奏也会越来越快。</p>
+      </div>
+      <div class="panel stats">
+        <div class="stat">
+          <div class="label">当前分数</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">最高分</div>
+          <div class="value" id="best">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">状态</div>
+          <div class="value"><small id="status">等待开始</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel stage-shell">
+      <div class="stage" id="stage">
+        <canvas id="game"></canvas>
+
+        <div class="hud">
+          <div class="chip-row">
+            <div class="chip">移动：<b>← →</b> / <b>A D</b></div>
+            <div class="chip">手机：<b>拖动</b></div>
+            <div class="chip">目标：<b>避开红色</b>，收集 <b style="color: var(--gold);">金色</b></div>
+          </div>
+          <div class="actions">
+            <button id="startBtn">开始游戏</button>
+            <button id="restartBtn" class="secondary">重新开始</button>
+          </div>
+        </div>
+
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="overlayTitle">准备出发</h2>
+            <p id="overlayText">点击开始后，尽量在陨石雨中活下去并收集能量球。这个页面支持鼠标、键盘和触摸操作。</p>
+            <div class="tips">
+              <div class="tip"><span class="dot"></span><span>每存活 1 秒都会得分，收集金球会额外加分。</span></div>
+              <div class="tip"><span class="dot" style="background: var(--gold); box-shadow: 0 0 0 5px rgba(255, 211, 107, 0.12);"></span><span>碰到红色陨石会直接结束本局。</span></div>
+              <div class="tip"><span class="dot" style="background: var(--accent-2); box-shadow: 0 0 0 5px rgba(125, 184, 255, 0.12);"></span><span>难度会随着时间提升，节奏会越来越快。</span></div>
+            </div>
+            <button id="overlayBtn">开始游戏</button>
+            <div class="footer-note">提示：如果你想把它改成别的游戏，我可以直接替你换成贪吃蛇、打砖块或飞机大战。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const stage = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const statusEl = document.getElementById('status');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const state = {
+      running: false,
+      gameOver: false,
+      score: 0,
+      best: Number(localStorage.getItem('neon-drift-best') || 0),
+      time: 0,
+      lastTime: 0,
+      spawnTimer: 0,
+      starTimer: 0,
+      difficulty: 1,
+      pointerActive: false,
+      pointerX: 0.5,
+      keys: new Set(),
+      shake: 0,
+      particles: [],
+      stars: [],
+      obstacles: [],
+      pickups: []
+    };
+
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 18,
+      vx: 0
+    };
+
+    const world = {
+      w: 0,
+      h: 0,
+      dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+    };
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function resetGame() {
+      state.running = false;
+      state.gameOver = false;
+      state.score = 0;
+      state.time = 0;
+      state.lastTime = 0;
+      state.spawnTimer = 0;
+      state.starTimer = 0;
+      state.difficulty = 1;
+      state.shake = 0;
+      state.particles.length = 0;
+      state.stars.length = 0;
+      state.obstacles.length = 0;
+      state.pickups.length = 0;
+      player.radius = 18;
+      player.x = world.w * 0.5;
+      player.y = world.h - 72;
+      player.vx = 0;
+      scoreEl.textContent = '0';
+      bestEl.textContent = String(state.best);
+      statusEl.textContent = '等待开始';
+      overlay.classList.remove('hidden');
+      overlayTitle.textContent = '准备出发';
+      overlayText.textContent = '点击开始后，尽量在陨石雨中活下去并收集能量球。这个页面支持鼠标、键盘和触摸操作。';
+      overlayBtn.textContent = '开始游戏';
+    }
+
+    function startGame() {
+      if (state.running) return;
+      state.running = true;
+      state.gameOver = false;
+      state.lastTime = performance.now();
+      overlay.classList.add('hidden');
+      statusEl.textContent = '进行中';
+      requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      state.running = false;
+      state.gameOver = true;
+      state.best = Math.max(state.best, Math.floor(state.score));
+      localStorage.setItem('neon-drift-best', String(state.best));
+      bestEl.textContent = String(state.best);
+      statusEl.textContent = '游戏结束';
+      overlay.classList.remove('hidden');
+      overlayTitle.textContent = '游戏结束';
+      overlayText.textContent = `本局得分 ${Math.floor(state.score)}。再来一次，看看能不能刷新最高分。`;
+      overlayBtn.textContent = '再玩一次';
+    }
+
+    function resize() {
+      const rect = stage.getBoundingClientRect();
+      world.dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      world.w = Math.max(320, Math.floor(rect.width));
+      world.h = Math.max(420, Math.floor(rect.height));
+      canvas.width = Math.floor(world.w * world.dpr);
+      canvas.height = Math.floor(world.h * world.dpr);
+      canvas.style.width = world.w + 'px';
+      canvas.style.height = world.h + 'px';
+      ctx.setTransform(world.dpr, 0, 0, world.dpr, 0, 0);
+      if (!state.running && !state.gameOver) {
+        player.x = world.w * 0.5;
+        player.y = world.h - 72;
+      }
+    }
+
+    function spawnObstacle() {
+      const radius = rand(12, 30);
+      const x = rand(radius + 20, world.w - radius - 20);
+      const speed = rand(150, 240) + state.difficulty * 18;
+      const spin = rand(-4, 4);
+      state.obstacles.push({
+        x, y: -radius - 10, radius, speed, spin,
+        angle: rand(0, Math.PI * 2),
+        hue: rand(345, 360)
+      });
+    }
+
+    function spawnPickup() {
+      const radius = rand(9, 14);
+      const x = rand(radius + 18, world.w - radius - 18);
+      const speed = rand(120, 180) + state.difficulty * 10;
+      state.pickups.push({
+        x, y: -radius - 10, radius, speed,
+        pulse: rand(0, Math.PI * 2)
+      });
+    }
+
+    function burst(x, y, color, amount = 12) {
+      for (let i = 0; i < amount; i += 1) {
+        const angle = rand(0, Math.PI * 2);
+        const speed = rand(60, 260);
+        state.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: rand(0.45, 0.95),
+          age: 0,
+          size: rand(1.6, 3.8),
+          color
+        });
+      }
+    }
+
+    function circleHit(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const sum = a.radius + b.radius;
+      return dx * dx + dy * dy <= sum * sum;
+    }
+
+    function drawBackground(dt) {
+      ctx.clearRect(0, 0, world.w, world.h);
+
+      const g = ctx.createLinearGradient(0, 0, 0, world.h);
+      g.addColorStop(0, 'rgba(10, 14, 30, 0.9)');
+      g.addColorStop(1, 'rgba(5, 8, 16, 1)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, world.w, world.h);
+
+      const horizon = world.h * 0.78;
+      const haze = ctx.createRadialGradient(world.w * 0.5, horizon, 20, world.w * 0.5, horizon, world.w * 0.55);
+      haze.addColorStop(0, 'rgba(125, 184, 255, 0.08)');
+      haze.addColorStop(1, 'rgba(125, 184, 255, 0)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, world.w, world.h);
+
+      const gridAlpha = 0.12;
+      ctx.save();
+      ctx.translate(0, world.h * 0.22);
+      ctx.strokeStyle = `rgba(125, 184, 255, ${gridAlpha})`;
+      ctx.lineWidth = 1;
+      const step = 42;
+      const offset = (state.time * 70) % step;
+      for (let x = -step; x <= world.w + step; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x + offset * 0.2, 0);
+        ctx.lineTo(world.w * 0.5 + (x - world.w * 0.5) * 1.6, world.h);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      for (const star of state.stars) {
+        ctx.save();
+        ctx.globalAlpha = star.alpha;
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawPlayer() {
+      const glow = ctx.createRadialGradient(player.x, player.y, 4, player.x, player.y, 34);
+      glow.addColorStop(0, 'rgba(124, 247, 212, 0.95)');
+      glow.addColorStop(0.5, 'rgba(125, 184, 255, 0.45)');
+      glow.addColorStop(1, 'rgba(125, 184, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 34, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      ctx.rotate(player.vx * 0.0008);
+      const body = ctx.createLinearGradient(-18, -18, 18, 18);
+      body.addColorStop(0, '#f0fff9');
+      body.addColorStop(0.45, '#7cf7d4');
+      body.addColorStop(1, '#7db8ff');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(0, -22);
+      ctx.quadraticCurveTo(18, -8, 16, 12);
+      ctx.quadraticCurveTo(0, 22, -16, 12);
+      ctx.quadraticCurveTo(-18, -8, 0, -22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawObstacles() {
+      for (const item of state.obstacles) {
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        ctx.rotate(item.angle);
+        const shadow = ctx.createRadialGradient(0, 0, item.radius * 0.2, 0, 0, item.radius * 1.8);
+        shadow.addColorStop(0, `hsla(${item.hue}, 100%, 72%, 0.95)`);
+        shadow.addColorStop(0.6, `hsla(${item.hue}, 90%, 58%, 0.55)`);
+        shadow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadow;
+        ctx.beginPath();
+        ctx.moveTo(0, -item.radius);
+        ctx.lineTo(item.radius * 0.84, item.radius * 0.7);
+        ctx.lineTo(-item.radius * 0.84, item.radius * 0.7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawPickups() {
+      for (const item of state.pickups) {
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        ctx.rotate(Math.sin(item.pulse) * 0.3);
+        const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, item.radius * 2.4);
+        glow.addColorStop(0, 'rgba(255, 244, 174, 0.98)');
+        glow.addColorStop(0.55, 'rgba(255, 211, 107, 0.55)');
+        glow.addColorStop(1, 'rgba(255, 211, 107, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 230, 141, 0.95)';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i += 1) {
+          const a = -Math.PI / 2 + i * Math.PI * 0.4;
+          const r = i % 2 === 0 ? item.radius : item.radius * 0.45;
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawParticles(dt) {
+      for (const p of state.particles) {
+        p.age += dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+        const alpha = 1 - p.age / p.life;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      state.particles = state.particles.filter((p) => p.age < p.life);
+    }
+
+    function update(dt) {
+      state.time += dt;
+      state.difficulty = 1 + state.time / 18;
+      state.score += dt * (10 + state.difficulty * 2);
+      scoreEl.textContent = String(Math.floor(state.score));
+
+      if (state.score > state.best) {
+        bestEl.textContent = String(Math.floor(state.score));
+      }
+
+      const targetX = state.pointerActive
+        ? clamp(state.pointerX * world.w, 20, world.w - 20)
+        : player.x;
+
+      const left = state.keys.has('arrowleft') || state.keys.has('a');
+      const right = state.keys.has('arrowright') || state.keys.has('d');
+      let desiredVX = 0;
+      if (left) desiredVX -= 1;
+      if (right) desiredVX += 1;
+      if (desiredVX !== 0) {
+        player.vx += desiredVX * 1800 * dt;
+      }
+
+      player.vx += (targetX - player.x) * 12 * dt;
+      player.vx *= Math.pow(0.001, dt);
+      player.x += player.vx * dt;
+      player.x = clamp(player.x, player.radius + 8, world.w - player.radius - 8);
+      player.y = world.h - 72;
+
+      const spawnInterval = clamp(0.95 - state.difficulty * 0.06, 0.22, 0.95);
+      const pickupInterval = clamp(4.8 - state.difficulty * 0.18, 1.8, 4.8);
+      state.spawnTimer += dt;
+      state.starTimer += dt;
+
+      while (state.spawnTimer >= spawnInterval) {
+        state.spawnTimer -= spawnInterval;
+        spawnObstacle();
+        if (Math.random() < 0.35) spawnObstacle();
+      }
+
+      while (state.starTimer >= pickupInterval) {
+        state.starTimer -= pickupInterval;
+        if (Math.random() < 0.74) spawnPickup();
+      }
+
+      for (const item of state.obstacles) {
+        item.y += item.speed * dt;
+        item.angle += item.spin * dt;
+      }
+
+      for (const item of state.pickups) {
+        item.y += item.speed * dt;
+        item.pulse += dt * 5;
+      }
+
+      const playerHit = { x: player.x, y: player.y, radius: player.radius };
+
+      for (const item of state.obstacles) {
+        if (circleHit(playerHit, item)) {
+          state.shake = 0.6;
+          burst(player.x, player.y, 'rgba(255, 107, 122, 0.95)', 20);
+          endGame();
+          return;
+        }
+      }
+
+      for (let i = state.pickups.length - 1; i >= 0; i -= 1) {
+        const item = state.pickups[i];
+        if (circleHit(playerHit, item)) {
+          state.pickups.splice(i, 1);
+          state.score += 45;
+          scoreEl.textContent = String(Math.floor(state.score));
+          burst(item.x, item.y, 'rgba(255, 211, 107, 0.95)', 16);
+        }
+      }
+
+      state.obstacles = state.obstacles.filter((item) => item.y < world.h + item.radius + 40);
+      state.pickups = state.pickups.filter((item) => item.y < world.h + item.radius + 40);
+
+      for (let i = state.stars.length - 1; i >= 0; i -= 1) {
+        const s = state.stars[i];
+        s.y += s.speed * dt;
+        s.x += s.drift * dt;
+        s.alpha = 0.3 + Math.sin(state.time * 1.8 + s.phase) * 0.12;
+        if (s.y > world.h + 8) {
+          state.stars.splice(i, 1);
+        }
+      }
+
+      while (state.stars.length < 90) {
+        state.stars.push({
+          x: Math.random() * world.w,
+          y: Math.random() * world.h,
+          size: rand(0.7, 1.8),
+          speed: rand(6, 22),
+          drift: rand(-10, 10),
+          alpha: rand(0.2, 0.7),
+          phase: rand(0, Math.PI * 2)
+        });
+      }
+
+      if (state.shake > 0) state.shake = Math.max(0, state.shake - dt);
+    }
+
+    function render(dt) {
+      const shakeX = state.shake > 0 ? rand(-6, 6) * state.shake : 0;
+      const shakeY = state.shake > 0 ? rand(-6, 6) * state.shake : 0;
+
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+      drawBackground(dt);
+      drawParticles(dt);
+      drawPickups();
+      drawObstacles();
+      drawPlayer();
+
+      const hudGlow = ctx.createLinearGradient(0, 0, world.w, 0);
+      hudGlow.addColorStop(0, 'rgba(124, 247, 212, 0)');
+      hudGlow.addColorStop(0.5, 'rgba(124, 247, 212, 0.12)');
+      hudGlow.addColorStop(1, 'rgba(125, 184, 255, 0)');
+      ctx.fillStyle = hudGlow;
+      ctx.fillRect(0, 0, world.w, 6);
+      ctx.restore();
+    }
+
+    function loop(now) {
+      if (!state.running) return;
+      const dt = Math.min(0.033, (now - state.lastTime) / 1000);
+      state.lastTime = now;
+      update(dt);
+      render(dt);
+      if (state.running) requestAnimationFrame(loop);
+    }
+
+    function handlePointerMove(clientX) {
+      const rect = stage.getBoundingClientRect();
+      state.pointerX = clamp((clientX - rect.left) / rect.width, 0, 1);
+    }
+
+    stage.addEventListener('pointerdown', (event) => {
+      state.pointerActive = true;
+      handlePointerMove(event.clientX);
+      stage.setPointerCapture?.(event.pointerId);
+      if (!state.running && !state.gameOver) startGame();
+    });
+
+    stage.addEventListener('pointermove', (event) => {
+      if (!state.pointerActive) return;
+      handlePointerMove(event.clientX);
+    });
+
+    stage.addEventListener('pointerup', () => {
+      state.pointerActive = false;
+    });
+
+    stage.addEventListener('pointercancel', () => {
+      state.pointerActive = false;
+    });
+
+    window.addEventListener('keydown', (event) => {
+      const key = event.key.toLowerCase();
+      if (['arrowleft', 'arrowright', 'a', 'd'].includes(key)) {
+        state.keys.add(key);
+      }
+      if (key === 'enter' || key === ' ') {
+        event.preventDefault();
+        if (!state.running) {
+          startGame();
+        }
+      }
+      if (key === 'r') {
+        resetGame();
+        startGame();
+      }
+    });
+
+    window.addEventListener('keyup', (event) => {
+      state.keys.delete(event.key.toLowerCase());
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+    });
+
+    startBtn.addEventListener('click', () => {
+      if (!state.running) startGame();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      resetGame();
+      startGame();
+    });
+
+    overlayBtn.addEventListener('click', () => {
+      if (!state.running) {
+        resetGame();
+        startGame();
+      }
+    });
+
+    resize();
+    resetGame();
+    render(0);
+  </script>
+</body>
+</html>
